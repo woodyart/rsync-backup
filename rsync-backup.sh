@@ -55,14 +55,11 @@ if [[ -z $BACKUP_DIR || -z $REMOTE_HOST || -z $REMOTE_DIR || -z $REMOTE_KEEP_DAY
 fi
 
 # Copy files to remote host
-rsync -avz -e \
-  "ssh -i "$REMOTE_KEY" "$SSH_OPT"" \
-  "$BACKUP_DIR"/ \
-  "$REMOTE_USER@$REMOTE_HOST":"$REMOTE_DIR"
+rsync -avz -e "ssh -i $REMOTE_KEY $SSH_OPT" "$BACKUP_DIR"/ "$REMOTE_USER@$REMOTE_HOST":"$REMOTE_DIR"
 [ $? != 0 ] && logger -s "$0 - rsync job failed"
 
 # Remove old files on remote host
-ssh -i "$REMOTE_KEY" "$SSH_OPT" \
+ssh -i "$REMOTE_KEY $SSH_OPT" \
   "$REMOTE_USER@$REMOTE_HOST" \
   'find "$REMOTE_DIR" -type -f -mtime +"$REMOTE_KEEP_DAYS" -delete'
 [ $? != 0 ] && logger -s "$0 - failed remove old files on $REMOTE_HOST"
