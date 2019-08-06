@@ -16,7 +16,7 @@ OPTIONS
   -u or --user <username>
           Username of the remote server
 
-  -s or --sshkey </path/to/private/ssh_key>
+  -i or --sshkey </path/to/private/ssh_key>
           Path to ssh private key
 
   -d or --destdir </path/to/save/backup>
@@ -41,7 +41,7 @@ while [[ "$#" -gt 0 ]]; do case $1 in
   -s|--backupdir) BACKUP_DIR="$2"; shift;;
   -u|--user)      REMOTE_USER="$2"; shift;;
   -h|--host)      REMOTE_HOST="$2"; shift;;
-  -s|--sshkey)    REMOTE_KEY="$2"; shift;;
+  -i|--sshkey)    REMOTE_KEY="$2"; shift;;
   -d|--destdir)   REMOTE_DIR="$2"; shift;;
   -k|--keepdays)  REMOTE_KEEP_DAYS="$2"; shift;;
   *) echo "ERROR
@@ -54,12 +54,12 @@ if [[ -z $BACKUP_DIR || -z $REMOTE_HOST || -z $REMOTE_DIR || -z $REMOTE_KEEP_DAY
   exit 1
 fi
 
+SSH_OPT="-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
+
 # Copy files to remote host
-rsync -avz -e "ssh -i $REMOTE_KEY $SSH_OPT" "$BACKUP_DIR"/ "$REMOTE_USER@$REMOTE_HOST":"$REMOTE_DIR"
+rsync -avz -e 'ssh -i '"$REMOTE_KEY"' '"$SSH_OPT"'' "$BACKUP_DIR"/ "$REMOTE_USER@$REMOTE_HOST:$REMOTE_DIR"
 [ $? != 0 ] && logger -s "$0 - rsync job failed"
 
 # Remove old files on remote host
-ssh -i "$REMOTE_KEY $SSH_OPT" \
-  "$REMOTE_USER@$REMOTE_HOST" \
-  'find "$REMOTE_DIR" -type -f -mtime +"$REMOTE_KEEP_DAYS" -delete'
+ssh -i $REMOTE_KEY $SSH_OPT $REMOTE_USER@$REMOTE_HOST 'find '"$REMOTE_DIR"' -type f -mtime +'"$REMOTE_KEEP_DAYS"' -delete'
 [ $? != 0 ] && logger -s "$0 - failed remove old files on $REMOTE_HOST"
